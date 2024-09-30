@@ -1,0 +1,506 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neuron Visualization</title>
+    <style>
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            margin-bottom: 20px;
+        }
+        .selector {
+            width: calc(50% - 10px);
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .slider-container {
+            width: 100%;
+            display: inline-block;
+            vertical-align: middle;
+            text-align: center;
+            font-size: 26px;
+        }
+        .slider {
+            width: calc(100% - 50px);
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .value-display {
+            display: inline-block;
+            width: 50px;
+            vertical-align: middle;
+        }
+        #display {
+            width: 80%;
+            margin: 20px auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            min-height: 200px;
+        }
+        #static-text {
+            display: inline-block;
+            position: absolute;
+            top: 20px;
+            right: 400px;
+            font-size: 16px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <select class="selector" id="series-selector">
+            <option value="gens_zephyr" data-max="31">Zephyr 7B beta</option>
+            <option value="gens_llama" data-max="31">LlaMA 2 7B chat</option>
+            <option value="gens_gemma" data-max="27">Gemma 7B</option>
+        </select>
+    </div>
+    <div class="container">
+        <select class="selector" id="series-selector-2">
+        </select>
+    </div>
+    <div class="slider-container">
+        <label for="slider">Select Layer:</label>
+        <input type="range" min="0" max="31" value="0" class="slider" id="slider">
+        <span class="value-display"></span>
+    </div>
+    <div id="display"></div>
+
+    <div id="static-text">
+        The activations of the unablated model are <span class="barcode"; style="color: black; background-color: #1f5baf">&nbspBlue&nbsp</span>
+        <br>
+        The activations of the ablated model are <span class="barcode"; style="color: black; background-color: #a43030">&nbspRed&nbsp</span>
+        <br>
+        When both models fired we color the tokens <span class="barcode"; style="color: black; background-color: #683efe">&nbspPurple&nbsp</span>
+    </div>
+
+    <script>
+        var seriesSelector = document.getElementById('series-selector');
+        var seriesSelector2 = document.getElementById('series-selector-2');
+        var valueDisplay = document.getElementById('value-display');
+        var slider = document.getElementById('slider');
+
+        // Define the options for each series
+        var seriesOptions = {
+            gens_zephyr: ["zephyr_vs_ablated_model_layer_", 
+                         "zephyr_vs_ablated_model_firing_rate_0_layer_",
+                         "zephyr_vs_ablated_model_firing_rate_1_layer_",
+                         "zephyr_vs_ablated_model_firing_rate_2_layer_"],
+            gens_llama: ["llama_vs_ablated_model_layer_", 
+                         "llama_vs_ablated_model_firing_rate_0_layer_",
+                         "llama_vs_ablated_model_firing_rate_1_layer_",
+                         "llama_vs_ablated_model_firing_rate_2_layer_"],
+            gens_gemma: ["gamma_vs_ablated_model_layer_", 
+                         "gamma_vs_ablated_model_layer_firing_rate_0_layer_",
+                         "gamma_vs_ablated_model_layer_firing_rate_1_layer_",
+                         "gamma_vs_ablated_model_layer_firing_rate_2_layer_"]
+        };
+        var seriesOptions_names = {
+            zephyr_vs_ablated_model_layer_: ["Original vs. Ablated (most changed)"],
+            zephyr_vs_ablated_model_firing_rate_0_layer_ : ["Original vs. Ablated (Changed firing pattern, 1st)"],
+            zephyr_vs_ablated_model_firing_rate_1_layer_: ["Original vs. Ablated (Changed firing pattern, 2nd)"],
+            zephyr_vs_ablated_model_firing_rate_2_layer_: ["Original vs. Ablated (Changed firing pattern, 3rd)"],
+            llama_vs_ablated_model_layer_: ["Original vs. Ablated (most changed)"],
+            llama_vs_ablated_model_firing_rate_0_layer_ : ["Original vs. Ablated (Changed firing pattern, 1st)"],
+            llama_vs_ablated_model_firing_rate_1_layer_: ["Original vs. Ablated (Changed firing pattern, 2nd)"],
+            llama_vs_ablated_model_firing_rate_2_layer_: ["Original vs. Ablated (Changed firing pattern, 3rd)"],
+            gamma_vs_ablated_model_layer_: ["Original vs. Ablated (most changed)"],
+            gamma_vs_ablated_model_layer_firing_rate_0_layer_ : ["Original vs. Ablated (Changed firing pattern, 1st)"],
+            gamma_vs_ablated_model_layer_firing_rate_1_layer_: ["Original vs. Ablated (Changed firing pattern, 2nd)"],
+            gamma_vs_ablated_model_layer_firing_rate_2_layer_: ["Original vs. Ablated (Changed firing pattern, 3rd)"]
+        };
+
+        // Function to populate options for the second dropdown based on the selection in the first dropdown
+        function populateSecondDropdown() {
+            var selectedSeries = seriesSelector.value;
+            var options = seriesOptions[selectedSeries];
+
+            seriesSelector2.innerHTML = ''; // Clear existing options
+
+            // Add options to the second dropdown
+            options.forEach(function(option) {
+                var optionElement = document.createElement('option');
+                optionElement.text = seriesOptions_names[option]
+                optionElement.value = option;
+                seriesSelector2.appendChild(optionElement);
+            });
+
+            // Trigger change event on the second dropdown to load the initial file for the new series
+            seriesSelector2.dispatchEvent(new Event('change'));
+        }
+
+        // Function to update slider max value based on the selection in the first dropdown
+        function updateSliderMax() {
+            var selectedOption = seriesSelector.options[seriesSelector.selectedIndex];
+            var max = selectedOption.dataset.max;
+            slider.max = max;
+            if (slider.value > max) {
+                slider.value = max;
+                valueDisplay.textContent = max;
+            }
+        }
+
+        function loadFile() {
+            var series = seriesSelector2.value;
+            var model = seriesSelector.value;
+            var value = slider.value;
+            var display = document.getElementById('display');
+            display.innerHTML = ''; // Clear previous content
+
+            // Load the selected HTML file
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    display.innerHTML = this.responseText;
+                }
+            };
+            xhttp.open('GET', model + '/' + series + value + '.html', true);
+            xhttp.send();
+        }
+
+
+        // Populate options for the second dropdown when the selection in the first dropdown changes
+        seriesSelector.addEventListener('change', populateSecondDropdown);
+
+        // Initial population of options for the second dropdown
+        populateSecondDropdown();
+
+
+        // // Update slider max value when selection in the first dropdown changes
+        seriesSelector.addEventListener('change', updateSliderMax);
+
+        // // Update value display when slider value changes
+        // slider.addEventListener('input', function() {
+        //     valueDisplay.textContent = this.value;
+        // });
+
+        // Initial update of slider max value
+        updateSliderMax();
+
+        seriesSelector2.addEventListener('change', loadFile);
+
+        slider.addEventListener('input', function() {
+            var value = this.value;
+            // valueDisplay.textContent = value; // Update value display
+            loadFile();
+        });
+
+        // Initial load
+        loadFile();
+    </script>
+</body>
+</html> -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neuron Visualization</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --background-color: #f0f0f0;
+            --text-color: #333;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .selector, .slider-container {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        select, .slider {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .slider {
+            width: 80%;
+            flex-grow: 1;
+        }
+
+        #display {
+            grid-column: 1 / -1;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            min-height: 300px;
+            transition: opacity 0.3s ease;
+            margin-top: 20px;
+            line-height: 1.6;
+        }
+
+        .neuron-info {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .neuron-info h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .neuron-info h2 {
+            color: #34495e;
+            font-size: 1.1em;
+            margin: 5px 0;
+        }
+
+        .context {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .context:last-child {
+            border-bottom: none;
+        }
+
+        .context span {
+            margin-right: 4px;
+            font-weight: normal;
+        }
+        #static-text {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(255,255,255,0.9);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .barcode {
+            display: inline-block;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-weight: normal;
+            margin-right: 5px;
+        }
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0,0,0,0.7);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <select id="series-selector">
+            <option value="gens_zephyr" data-max="31">Zephyr 7B beta</option>
+            <option value="gens_llama" data-max="31">LlaMA 2 7B chat</option>
+            <option value="gens_gemma" data-max="27">Gemma 7B</option>
+        </select>
+        <select id="series-selector-2"></select>
+        <div class="slider-container">
+            <label for="slider">Layer:</label>
+            <input type="range" min="0" max="31" value="0" class="slider" id="slider">
+            <span id="value-display">0</span>
+        </div>
+    </div>
+    <div id="display"></div>
+    <div id="static-text">
+        <p id="neuron-info"></p>
+        <p>Comparison:</p>
+        <p id="comparison-type"></p>
+        <p>Activations of:</p>
+        <p><span class="barcode" style="background-color: #1f5baf; color: white;">Unablated model</span></p>
+        <p><span class="barcode" style="background-color: #a43030; color: white;">Ablated model</span></p>
+        <p><span class="barcode" style="background-color: #683efe; color: white;">Both models</span></p>
+    </div>
+    <div id="loading">Loading...</div>
+
+    <script>
+        const seriesSelector = document.getElementById('series-selector');
+        const seriesSelector2 = document.getElementById('series-selector-2');
+        const valueDisplay = document.getElementById('value-display');
+        const slider = document.getElementById('slider');
+        const display = document.getElementById('display');
+        const loading = document.getElementById('loading');
+
+        const seriesOptions = {
+            gens_zephyr: ["zephyr_vs_ablated_model_layer_", 
+                         "zephyr_vs_ablated_model_firing_rate_0_layer_",
+                         "zephyr_vs_ablated_model_firing_rate_1_layer_",
+                         "zephyr_vs_ablated_model_firing_rate_2_layer_"],
+            gens_llama: ["llama_vs_ablated_model_layer_", 
+                         "llama_vs_ablated_model_firing_rate_0_layer_",
+                         "llama_vs_ablated_model_firing_rate_1_layer_",
+                         "llama_vs_ablated_model_firing_rate_2_layer_"],
+            gens_gemma: ["gamma_vs_ablated_model_layer_", 
+                         "gamma_vs_ablated_model_layer_firing_rate_0_layer_",
+                         "gamma_vs_ablated_model_layer_firing_rate_1_layer_",
+                         "gamma_vs_ablated_model_layer_firing_rate_2_layer_"]
+        };
+
+        const seriesOptions_names = {
+            zephyr_vs_ablated_model_layer_: "Original vs. Ablated (Neuron with larged overall act. change)",
+            zephyr_vs_ablated_model_firing_rate_0_layer_: "Original vs. Ablated (1st most frequently changed neuron)",
+            zephyr_vs_ablated_model_firing_rate_1_layer_: "Original vs. Ablated (2nd most frequently changed neuron)",
+            zephyr_vs_ablated_model_firing_rate_2_layer_: "Original vs. Ablated (3rd most frequently changed neuron)",
+            llama_vs_ablated_model_layer_: "Original vs. Ablated (Neuron with larged overall act. change)",
+            llama_vs_ablated_model_firing_rate_0_layer_: "Original vs. Ablated (1st most frequently changed neuron)",
+            llama_vs_ablated_model_firing_rate_1_layer_: "Original vs. Ablated (2nd most frequently changed neuron)",
+            llama_vs_ablated_model_firing_rate_2_layer_: "Original vs. Ablated (3rd most frequently changed neuron)",
+            gamma_vs_ablated_model_layer_: "Original vs. Ablated (Neuron with larged overall act. change)",
+            gamma_vs_ablated_model_layer_firing_rate_0_layer_: "Original vs. Ablated (1st most frequently changed neuron)",
+            gamma_vs_ablated_model_layer_firing_rate_1_layer_: "Original vs. Ablated (2nd most frequently changed neuron)",
+            gamma_vs_ablated_model_layer_firing_rate_2_layer_: "Original vs. Ablated (3rd most frequently changed neuron)"
+        };
+
+        function populateSecondDropdown() {
+            const selectedSeries = seriesSelector.value;
+            const options = seriesOptions[selectedSeries];
+
+            seriesSelector2.innerHTML = options.map(option => 
+                `<option value="${option}">${seriesOptions_names[option]}</option>`
+            ).join('');
+
+            seriesSelector2.dispatchEvent(new Event('change'));
+        }
+
+        function updateSliderMax() {
+            const max = seriesSelector.options[seriesSelector.selectedIndex].dataset.max;
+            slider.max = max;
+            if (slider.value > max) {
+                slider.value = max;
+                valueDisplay.textContent = max;
+            }
+        }
+
+        function updateStaticText() {
+            const neuronInfo = document.querySelector('.neuron-info h1');
+            const comparisonType = seriesSelector2.options[seriesSelector2.selectedIndex].text.split('(')[1].split(')')[0];
+            const modelSelected = seriesSelector.options[seriesSelector.selectedIndex].text
+            
+            if (neuronInfo) {
+                document.getElementById('neuron-info').textContent = modelSelected + ', ' + neuronInfo.textContent;
+            }
+            document.getElementById('comparison-type').textContent = comparisonType;
+        }
+
+        async function loadFile() {
+            const series = seriesSelector2.value;
+            const model = seriesSelector.value;
+            const value = slider.value;
+            
+            loading.style.display = 'block';
+            display.style.opacity = '0.5';
+
+            try {
+                const response = await fetch(`${model}/${series}${value}.html`);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const html = await response.text();
+                
+                // Split the content into neuron info and contexts
+                const [neuronInfoHtml, contextsHtml] = splitContent(html);
+
+                display.innerHTML = `
+                    <div class="neuron-info">${neuronInfoHtml}</div>
+                    <div class="contexts">${contextsHtml}</div>
+                `;
+                updateStaticText();
+            } catch (error) {
+                console.error('Error loading file:', error);
+                display.innerHTML = '<p>Error loading file. Please try again.</p>';
+            } finally {
+                loading.style.display = 'none';
+                display.style.opacity = '1';
+            }
+        }
+
+        function splitContent(html) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // Extract neuron information (assuming it's the first three elements)
+            const neuronInfoElements = Array.from(doc.body.children).slice(0, 3);
+            const neuronInfoHtml = neuronInfoElements.map(el => el.outerHTML).join('');
+
+            // Remove neuron info from the document
+            neuronInfoElements.forEach(el => el.remove());
+
+            // Get all span elements
+            const spans = doc.body.querySelectorAll('span');
+
+            let contexts = [];
+            let currentContext = [];
+
+            spans.forEach((span, index) => {
+                if (span.textContent.trim() === 'BOS' && index !== 0) {
+                    // Start of a new context
+                    if (currentContext.length > 0) {
+                        contexts.push(currentContext.join(''));
+                        currentContext = [];
+                    }
+                }
+                // Remove <br> tags from span's HTML
+                let spanHtml = span.outerHTML.replace(/<br>/g, '');
+                currentContext.push(spanHtml);
+            });
+
+            // Add the last context
+            if (currentContext.length > 0) {
+                contexts.push(currentContext.join(''));
+            }
+
+            const contextsHtml = contexts.map(context => {
+                // Remove any remaining <br> tags and wrap in context div
+                return `<div class="context">${context.replace(/<br>/g, '')}</div>`;
+            }).join('');
+
+            return [neuronInfoHtml, contextsHtml];
+        }
+
+        seriesSelector.addEventListener('change', () => {
+            populateSecondDropdown();
+            updateSliderMax();
+        });
+
+        seriesSelector2.addEventListener('change', loadFile);
+
+        slider.addEventListener('input', () => {
+            valueDisplay.textContent = slider.value;
+            loadFile();
+        });
+
+        // Initial setup
+        populateSecondDropdown();
+        updateSliderMax();
+        loadFile();
+    </script>
+</body>
+</html>
