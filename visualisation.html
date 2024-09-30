@@ -141,7 +141,9 @@
         <main>
             <section class="abstract">
                 <p>
-                    This is a simple visualization to see what neurons are most changed with regards to activation strength and frequency when comparing the original model and the model with the zero modes ablated. You can select the family and the neuron group (comparison type) you want to look at in the dropdown menus below. The comparison types are
+                    This is a simple visualization accompanying the neuron analysis done in the paper. You can use this tool to see what neurons are most changed with regards to activation strength and frequency when comparing the original model and the model with the zero modes ablated. The contexts are given below and are choosen from the RedPajama dataset. We picked 100 contexts with context length 128 each. <i>You will see that many of the neurons we have collected here are rather interpretable, have rather basic firing patterns (as in they fire on basic linguistic aspects/concepts), and are common between models as well. Importantly, you can also see that there can be a tremendous difference between the activation patterns of the ablated and unablated models in such a way that the original activation patterns corresponding to basic language aspects are mostly lost.</i> This suggests the zero modes seem to be related to core language model capabilities. 
+                    
+                    To select the family and the neuron group (comparison type) you want to look at in the dropdown menus below. The comparison types are
                     <ol>
                         <li>Original vs. Ablated (Neuron with largest overall act. change)</li>
                         <li>Original vs. Ablated (1st most frequently changed neuron)</li>
