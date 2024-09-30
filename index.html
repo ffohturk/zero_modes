@@ -3,302 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neuron Visualization</title>
+    <title>My Research Paper</title>
     <style>
-        :root {
-            --primary-color: #3498db;
-            --secondary-color: #2ecc71;
-            --background-color: #f0f0f0;
-            --text-color: #333;
-        }
         body {
             font-family: Arial, sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-        .selector, .slider-container {
-            background-color: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        select, .slider {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 16px;
-        }
-        .slider-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .slider {
-            width: 80%;
-            flex-grow: 1;
-        }
-
-        #display {
-            grid-column: 1 / -1;
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            min-height: 300px;
-            transition: opacity 0.3s ease;
-            margin-top: 20px;
             line-height: 1.6;
-        }
-
-        .neuron-info {
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .neuron-info h1 {
-            color: #2c3e50;
-            margin-bottom: 10px;
-        }
-
-        .neuron-info h2 {
-            color: #34495e;
-            font-size: 1.1em;
-            margin: 5px 0;
-        }
-
-        .context {
-            margin-bottom: 20px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        .context:last-child {
-            border-bottom: none;
-        }
-
-        .context span {
-            margin-right: 4px;
-            font-weight: normal;
-        }
-        #static-text {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background-color: rgba(255,255,255,0.9);
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .barcode {
-            display: inline-block;
-            padding: 2px 5px;
-            border-radius: 3px;
-            font-weight: normal;
-            margin-right: 5px;
-        }
-        #loading {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(0,0,0,0.7);
-            color: white;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
             padding: 20px;
-            border-radius: 8px;
-            display: none;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+        }
+        .abstract {
+            background-color: #f2f2f2;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .links {
+            margin-top: 30px;
+        }
+        .links a {
+            display: inline-block;
+            margin-right: 20px;
+            padding: 10px 15px;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+        .links a:hover {
+            background-color: #2980b9;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <select id="series-selector">
-            <option value="gens_zephyr" data-max="31">Zephyr 7B beta</option>
-            <option value="gens_llama" data-max="31">LlaMA 2 7B chat</option>
-            <option value="gens_gemma" data-max="27">Gemma 7B</option>
-        </select>
-        <select id="series-selector-2"></select>
-        <div class="slider-container">
-            <label for="slider">Layer:</label>
-            <input type="range" min="0" max="31" value="0" class="slider" id="slider">
-            <span id="value-display">0</span>
-        </div>
-    </div>
-    <div id="display"></div>
-    <div id="static-text">
-        <p><b>Model & Neuron:</b></p>
-        <p id="neuron-info"></p>
-        <p><b>Comparison type:</b></p>
-        <p id="comparison-type"></p>
-        <p><b>Activations of:</b></p>
-        <p><span class="barcode" style="background-color: #1f5baf; color: white;">Unablated model</span></p>
-        <p><span class="barcode" style="background-color: #a43030; color: white;">Ablated model</span></p>
-        <p><span class="barcode" style="background-color: #683efe; color: white;">Both models</span></p>
-    </div>
-    <div id="loading">Loading...</div>
+    <header>
+        <h1>Do not prune but interpret weights that did not change</h1>
+    </header>
 
-    <script>
-        const seriesSelector = document.getElementById('series-selector');
-        const seriesSelector2 = document.getElementById('series-selector-2');
-        const valueDisplay = document.getElementById('value-display');
-        const slider = document.getElementById('slider');
-        const display = document.getElementById('display');
-        const loading = document.getElementById('loading');
+    <main>
+        <section class="abstract">
+            <h2>Abstract</h2>
+            <p>
+                We empirically show that language models have a tiny set of weights that did not change after finetuning. Such weights, which we call zero modes, are essential for the model's functionality. They can be linked to various mechanisms that are ought to be learned during pretraining, such as induction heads or a neuron firing on the first sentence of an input. We make these claims concrete in one and two layer toy models trained on general code and finetuned on Python and three popular open-source pretrained-finetuned pairs of models. We find many similarities between the toy and large language models. For the LLMs, we not only show how the zero modes impact their performance on a wide variety of tasks, but also how they can affect hidden states and help select interesting (and universal) neurons.
+            </p>
+        </section>
 
-        const seriesOptions = {
-            gens_zephyr: ["zephyr_vs_ablated_model_layer_", 
-                         "zephyr_vs_ablated_model_firing_rate_0_layer_",
-                         "zephyr_vs_ablated_model_firing_rate_1_layer_",
-                         "zephyr_vs_ablated_model_firing_rate_2_layer_"],
-            gens_llama: ["llama_vs_ablated_model_layer_", 
-                         "llama_vs_ablated_model_firing_rate_0_layer_",
-                         "llama_vs_ablated_model_firing_rate_1_layer_",
-                         "llama_vs_ablated_model_firing_rate_2_layer_"],
-            gens_gemma: ["gamma_vs_ablated_model_layer_", 
-                         "gamma_vs_ablated_model_layer_firing_rate_0_layer_",
-                         "gamma_vs_ablated_model_layer_firing_rate_1_layer_",
-                         "gamma_vs_ablated_model_layer_firing_rate_2_layer_"]
-        };
+        <section class="links">
+            <h2>Paper Resources</h2>
+            <a href="Do_not_prune_but_interpret.pdf" target="_blank">Download Full Paper (PDF)</a>
+            <a href="visualisation.html">Neuron visualization</a>
+        </section>
+    </main>
 
-        const seriesOptions_names = {
-            zephyr_vs_ablated_model_layer_: "Original vs. Ablated (Neuron with largest overall act. change)",
-            zephyr_vs_ablated_model_firing_rate_0_layer_: "Original vs. Ablated (1st most frequently changed neuron)",
-            zephyr_vs_ablated_model_firing_rate_1_layer_: "Original vs. Ablated (2nd most frequently changed neuron)",
-            zephyr_vs_ablated_model_firing_rate_2_layer_: "Original vs. Ablated (3rd most frequently changed neuron)",
-            llama_vs_ablated_model_layer_: "Original vs. Ablated (Neuron with largest overall act. change)",
-            llama_vs_ablated_model_firing_rate_0_layer_: "Original vs. Ablated (1st most frequently changed neuron)",
-            llama_vs_ablated_model_firing_rate_1_layer_: "Original vs. Ablated (2nd most frequently changed neuron)",
-            llama_vs_ablated_model_firing_rate_2_layer_: "Original vs. Ablated (3rd most frequently changed neuron)",
-            gamma_vs_ablated_model_layer_: "Original vs. Ablated (Neuron with largest overall act. change)",
-            gamma_vs_ablated_model_layer_firing_rate_0_layer_: "Original vs. Ablated (1st most frequently changed neuron)",
-            gamma_vs_ablated_model_layer_firing_rate_1_layer_: "Original vs. Ablated (2nd most frequently changed neuron)",
-            gamma_vs_ablated_model_layer_firing_rate_2_layer_: "Original vs. Ablated (3rd most frequently changed neuron)"
-        };
-
-        function populateSecondDropdown() {
-            const selectedSeries = seriesSelector.value;
-            const options = seriesOptions[selectedSeries];
-
-            seriesSelector2.innerHTML = options.map(option => 
-                `<option value="${option}">${seriesOptions_names[option]}</option>`
-            ).join('');
-
-            seriesSelector2.dispatchEvent(new Event('change'));
-        }
-
-        function updateSliderMax() {
-            const max = seriesSelector.options[seriesSelector.selectedIndex].dataset.max;
-            slider.max = max;
-            if (slider.value > max) {
-                slider.value = max;
-                valueDisplay.textContent = max;
-            }
-        }
-
-        function updateStaticText() {
-            const neuronInfo = document.querySelector('.neuron-info h1');
-            const comparisonType = seriesSelector2.options[seriesSelector2.selectedIndex].text.split('(')[1].split(')')[0];
-            const modelSelected = seriesSelector.options[seriesSelector.selectedIndex].text
-            
-            if (neuronInfo) {
-                document.getElementById('neuron-info').textContent = modelSelected + ', ' + neuronInfo.textContent;
-            }
-            document.getElementById('comparison-type').textContent = comparisonType;
-        }
-
-        async function loadFile() {
-            const series = seriesSelector2.value;
-            const model = seriesSelector.value;
-            const value = slider.value;
-            
-            loading.style.display = 'block';
-            display.style.opacity = '0.5';
-
-            try {
-                const response = await fetch(`${model}/${series}${value}.html`);
-                if (!response.ok) throw new Error('Network response was not ok');
-                const html = await response.text();
-                
-                const [neuronInfoHtml, contextsHtml] = splitContent(html);
-
-                display.innerHTML = `
-                    <div class="neuron-info">${neuronInfoHtml}</div>
-                    <div class="contexts">${contextsHtml}</div>
-                `;
-                updateStaticText();
-            } catch (error) {
-                console.error('Error loading file:', error);
-                display.innerHTML = '<p>Error loading file. Please try again.</p>';
-            } finally {
-                loading.style.display = 'none';
-                display.style.opacity = '1';
-            }
-        }
-
-        function splitContent(html) {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            
-            const neuronInfoElements = Array.from(doc.body.children).slice(0, 3);
-            const neuronInfoHtml = neuronInfoElements.map(el => el.outerHTML).join('');
-
-            neuronInfoElements.forEach(el => el.remove());
-
-            const spans = doc.body.querySelectorAll('span');
-
-            let contexts = [];
-            let currentContext = [];
-
-            spans.forEach((span, index) => {
-                if (span.textContent.trim() === 'BOS' && index !== 0) {
-                    if (currentContext.length > 0) {
-                        contexts.push(currentContext.join(''));
-                        currentContext = [];
-                    }
-                }
-                let spanHtml = span.outerHTML.replace(/<br>/g, '');
-                currentContext.push(spanHtml);
-            });
-
-            if (currentContext.length > 0) {
-                contexts.push(currentContext.join(''));
-            }
-
-            const contextsHtml = contexts.map(context => {
-                return `<div class="context">${context.replace(/<br>/g, '')}</div>`;
-            }).join('');
-
-            return [neuronInfoHtml, contextsHtml];
-        }
-
-        seriesSelector.addEventListener('change', () => {
-            populateSecondDropdown();
-            updateSliderMax();
-        });
-
-        seriesSelector2.addEventListener('change', loadFile);
-
-        slider.addEventListener('input', () => {
-            valueDisplay.textContent = slider.value;
-            loadFile();
-        });
-
-        populateSecondDropdown();
-        updateSliderMax();
-        loadFile();
-    </script>
+    <footer>
+        <p>&copy; 2023 Your Name. All rights reserved.</p>
+    </footer>
 </body>
 </html>
